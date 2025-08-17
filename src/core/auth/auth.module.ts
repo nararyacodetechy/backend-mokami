@@ -12,19 +12,20 @@ import { UserSessions } from '../users/entity/users-sessions.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MailModule } from '../mail/mail.module';
 import { GoogleStrategy } from './strategy/google.strategy';
-import { UserRole } from '../role/entity/user-roles.entity';
-import { Role } from '../role/entity/role.entity';
+import { UserRoles } from '../role/entity/user-roles.entity';
+import { Roles } from '../role/entity/roles.entity';
+import { UserProfiles } from '../profile/entity/user-profiles.entity';
 
 @Module({
   imports: [
     PassportModule,
     ConfigModule,
     MailModule,
-    TypeOrmModule.forFeature([Users, UserSessions, Role, UserRole]), 
+    TypeOrmModule.forFeature([Users, UserProfiles, UserSessions, Roles, UserRoles]), 
     JwtModule.registerAsync({
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: '1d' },
+        signOptions: { expiresIn: '30d' },
       }),
       inject: [ConfigService],
     }),

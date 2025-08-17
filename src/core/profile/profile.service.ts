@@ -1,8 +1,9 @@
+// src/core/profile/profile.service.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Users } from '../users/entity/users.entity';
-import { RoleEnum } from '../role/enum/role.enum';
+import { Users } from 'src/core/users/entity/users.entity';
+import { RoleEnum } from 'src/core/role/enum/role.enum';
 
 @Injectable()
 export class ProfileService {
@@ -14,70 +15,46 @@ export class ProfileService {
   async getProfile(userId: string) {
     const user = await this.userRepository.findOne({
       where: { id: userId },
-      relations: ['roles', 'activeRole'],
+      relations: ['roles', 'activeRole', 'profile'],
     });
 
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
+    if (!user) throw new NotFoundException('User not found');
 
-    // Base profile data
-    const profile = {
-      id: user.id,
-      email: user.email,
-      fullName: user.fullName,
-      roles: user.roles.map((r) => r.name),
-      activeRole: user.activeRole?.name || 'user',
+    const defaultProfile = {
+      id: null,
+      userId: user.id,
+      fullName: null,
+      username: null,
+      nik: null,
+      address: null,
+      phone: null,
+      company: null,
+      imageProfile: null,
     };
 
-    // Role-specific data
-    let roleSpecificData = {};
-
-    switch (user.activeRole?.name) {
-      case RoleEnum.CUSTOMER:
-        roleSpecificData = {
-          orders: [], // Placeholder: Fetch from OrderService
-        };
-        break;
-      case RoleEnum.DEVELOPER:
-        roleSpecificData = {
-          tasks: [], // Placeholder: Fetch from TaskService
-        };
-        break;
-      case RoleEnum.ADMIN:
-        roleSpecificData = {
-          adminPrivileges: ['manage-users', 'manage-roles'], // Example
-        };
-        break;
-      case RoleEnum.SALES:
-        roleSpecificData = {
-          salesTargets: [], // Placeholder
-        };
-        break;
-      case RoleEnum.MARKETING:
-        roleSpecificData = {
-          campaigns: [], // Placeholder
-        };
-        break;
-      case RoleEnum.PRODUCT_MANAGER:
-        roleSpecificData = {
-          products: [], // Placeholder
-        };
-        break;
-      case RoleEnum.DESIGNER:
-        roleSpecificData = {
-          designs: [], // Placeholder
-        };
-        break;
-      case RoleEnum.DEVOPS:
-        roleSpecificData = {
-          deployments: [], // Placeholder
-        };
-        break;
-      default:
-        roleSpecificData = {};
-    }
-
-    return { ...profile, ...roleSpecificData };
+    return {
+      status: 'success',
+      message: 'Profile retrieved successfully',
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          isEmailVerified: user.isEmailVerified,
+          roles: user.roles ? user.roles.map(r => r.role_name as RoleEnum) : [],
+          activeRole: (user.activeRole?.role_name as RoleEnum) || RoleEnum.USER,
+          profile: user.profile ? {
+            id: user.profile.id,
+            userId: user.id,
+            fullName: user.profile.fullName ?? null,
+            username: user.profile.username ?? null,
+            nik: user.profile.nik ?? null,
+            address: user.profile.address ?? null,
+            phone: user.profile.phone ?? null,
+            company: user.profile.company ?? null,
+            imageProfile: user.profile.imageProfile ?? null,
+          } : defaultProfile,
+        },
+      },
+    };
   }
 }

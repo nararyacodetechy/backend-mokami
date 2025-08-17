@@ -1,7 +1,13 @@
-import { IsEmail, IsNotEmpty, IsStrongPassword, IsArray, ArrayNotEmpty, IsEnum } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsEmail, IsNotEmpty, IsStrongPassword, IsArray, ArrayNotEmpty, IsEnum, ValidateNested } from 'class-validator';
+import { CreateUserProfileDto } from 'src/core/profile/dto/create-profile.dto';
 import { RoleEnum } from 'src/core/role/enum/role.enum';
 
 export class RegisterDto {
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+
   @IsNotEmpty()
   @IsStrongPassword({
     minLength: 8,
@@ -12,15 +18,12 @@ export class RegisterDto {
   })
   password: string;
 
-  @IsEmail()
-  @IsNotEmpty()
-  email: string;
-
-  @IsNotEmpty()
-  fullName: string;
+  @ValidateNested()
+  @Type(() => CreateUserProfileDto)
+  profile: CreateUserProfileDto;
 
   @IsArray()
   @ArrayNotEmpty()
   @IsEnum(RoleEnum, { each: true })
-  roles: RoleEnum[]; // e.g. ['admin', 'customer']
+  roles: RoleEnum[];
 }

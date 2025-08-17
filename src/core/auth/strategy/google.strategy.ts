@@ -1,3 +1,4 @@
+// auth/strategy/google.strategy.ts
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, StrategyOptionsWithRequest } from 'passport-google-oauth20';
@@ -15,6 +16,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       passReqToCallback: true, // ini wajib untuk StrategyOptionsWithRequest
     } as StrategyOptionsWithRequest); // cast agar Typescript tidak protes
   }
+
 
   async validate(
     req: Request,

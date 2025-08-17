@@ -1,22 +1,24 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength, IsArray, IsUUID, IsEnum, IsOptional } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsEmail, IsNotEmpty, IsString, MinLength, IsArray, IsUUID, IsEnum, IsOptional, ValidateNested } from 'class-validator';
+import { CreateUserProfileDto } from 'src/core/profile/dto/create-profile.dto';
 import { RoleEnum } from 'src/core/role/enum/role.enum';
 
 export class CreateUserDto {
   @IsEmail()
+  @IsNotEmpty()
   email: string;
 
   @IsString()
   @MinLength(6)
+  @IsNotEmpty()
   password: string;
 
-  @IsOptional()
+  // why we need this?
+  @IsArray()
   @IsEnum(RoleEnum, { each: true })
-  roles?: RoleEnum[];
+  roles: RoleEnum[];
 
-  @IsString()
-  @IsNotEmpty()
-  fullName: string;
-
-  @IsUUID()
-  roleId: string;
+  @ValidateNested()
+  @Type(() => CreateUserProfileDto)
+  profile: CreateUserProfileDto;
 }

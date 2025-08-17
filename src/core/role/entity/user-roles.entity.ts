@@ -1,9 +1,9 @@
 import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, CreateDateColumn } from "typeorm";
-import { Role } from "./role.entity";
+import { Roles } from "./roles.entity";
 import { Users } from "src/core/users/entity/users.entity";
 
 @Entity('user_roles')
-export class UserRole {
+export class UserRoles {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -16,11 +16,12 @@ export class UserRole {
   @CreateDateColumn({ name: 'assigned_at' })
   assignedAt: Date;
 
+  // ini menghubungkan roles dan users
   @ManyToOne(() => Users, user => user.userRoles, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: Users;
 
-  @ManyToOne(() => Role, role => role.userRoles, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Roles, role => role.userRoles, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'role_id' })
-  role: Role;
+  role: Roles;
 }

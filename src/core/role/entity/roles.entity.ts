@@ -1,28 +1,28 @@
 // src/modules/role/entity/role.entity.ts
+
 import {
     Entity,
-    PrimaryGeneratedColumn,
     Column,
     CreateDateColumn,
     UpdateDateColumn,
     PrimaryColumn,
     OneToMany,
   } from 'typeorm';
-import { UserRole } from './user-roles.entity';
+import { UserRoles } from './user-roles.entity';
   
   @Entity('roles')
-  export class Role {
+  export class Roles {
     @PrimaryColumn('char', { length: 36 })
     id: string;
   
-    @Column({ name: 'name', unique: true })
-    name: string;
+    @Column({ name: 'role_name', unique: true })
+    role_name: string;
   
     @Column({ name: 'display_name', nullable: true })
     displayName: string;
   
-    @Column({ nullable: true, type: 'text' })
-    description: string;
+    @Column({ name: 'description_role', nullable: true, type: 'text' })
+    descriptionRole: string;
 
     @CreateDateColumn({ name: 'created_at'})
     createdAt: Date;
@@ -30,7 +30,8 @@ import { UserRole } from './user-roles.entity';
     @UpdateDateColumn({ name: 'updated_at'})
     updatedAt: Date;
 
-    @OneToMany(() => UserRole, (userRole) => userRole.role)
-    userRoles: UserRole[];
+    // Connections
+    @OneToMany(() => UserRoles, (userRole) => userRole.role)
+    userRoles: UserRoles[];
   }
   

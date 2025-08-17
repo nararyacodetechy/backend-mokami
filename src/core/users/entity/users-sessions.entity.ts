@@ -22,6 +22,10 @@ export class UserSessions {
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
+  @Column({ name: 'expired_at', type: 'timestamp' })
+  expiredAt: Date;
+
+  // Connections
   @ManyToOne(() => Users, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: Users;

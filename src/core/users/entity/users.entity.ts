@@ -1,6 +1,7 @@
 // src/modules/user/entity/user.entity.ts
-import { Role } from 'src/core/role/entity/role.entity';
-import { UserRole } from 'src/core/role/entity/user-roles.entity';
+import { UserProfiles } from 'src/core/profile/entity/user-profiles.entity';
+import { Roles } from 'src/core/role/entity/roles.entity';
+import { UserRoles } from 'src/core/role/entity/user-roles.entity';
 import {
   Entity,
   PrimaryColumn,
@@ -12,6 +13,7 @@ import {
   ManyToOne,
   JoinColumn,
   OneToMany,
+  OneToOne,
 } from 'typeorm';
 
 @Entity('users')
@@ -22,27 +24,13 @@ export class Users {
   @Column({ name: 'email', unique: true })
   email: string;
 
-  @Column({ name: 'hashed_password' })
-  hashedPassword: string;
+  @Column({ name: 'hashed_password', type: 'varchar', length: 255, nullable: true })
+  hashedPassword: string | null;
 
-  @Column({ name: 'full_name' })
-  fullName: string;
-
-  @ManyToMany(() => Role)
-  @JoinTable({
-    name: 'user_roles',
-    joinColumn: { name: 'user_id' },
-    inverseJoinColumn: { name: 'role_id' },
-  })
-  roles: Role[];
-
-  @ManyToOne(() => Role, { nullable: true, eager: true })
+  @ManyToOne(() => Roles, { nullable: true, eager: true })
   @JoinColumn({ name: 'active_role_id' })
-  activeRole: Role;
-
-  @OneToMany(() => UserRole, (userRole) => userRole.user)
-  userRoles: UserRole[];
-
+  activeRole: Roles;
+  
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
 
@@ -66,4 +54,19 @@ export class Users {
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
+
+  // Connections
+  @ManyToMany(() => Roles)
+  @JoinTable({
+    name: 'user_roles',
+    joinColumn: { name: 'user_id' },
+    inverseJoinColumn: { name: 'role_id' },
+  })
+  roles: Roles[];
+
+  @OneToMany(() => UserRoles, (userRole) => userRole.user)
+  userRoles: UserRoles[];
+
+  @OneToOne(() => UserProfiles, profile => profile.userId, { cascade: true })
+  profile: UserProfiles;
 }

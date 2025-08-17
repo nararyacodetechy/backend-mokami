@@ -8,17 +8,6 @@ import { ROLES_KEY } from '../decorators/role.decorator';
 export class RolesGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
-  // canActivate(context: ExecutionContext): boolean {
-  //   const requiredRoles = this.reflector.getAllAndOverride<RoleEnum[]>(ROLES_KEY, [
-  //     context.getHandler(),
-  //     context.getClass(),
-  //   ]);
-  //   if (!requiredRoles) return true;
-
-  //   const { user } = context.switchToHttp().getRequest();
-  //   return requiredRoles.includes(user?.activeRole?.name);
-  // }
-
   canActivate(context: ExecutionContext): boolean {
     const requiredRoles = this.reflector.getAllAndOverride<RoleEnum[]>(ROLES_KEY, [
       context.getHandler(),
@@ -27,6 +16,7 @@ export class RolesGuard implements CanActivate {
     if (!requiredRoles) return true;
   
     const { user } = context.switchToHttp().getRequest();
+    // const userRole = user?.activeRole?.name;
     const userRole = user?.activeRole?.name;
   
     // ADMIN boleh akses semua
