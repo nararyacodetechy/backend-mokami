@@ -1,11 +1,10 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './strategy/jwt.strategy';
 import { UsersModule } from '../users/users.module';
-import { UsersController } from '../users/users.controller';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Users } from '../users/entity/users.entity';
 import { UserSessions } from '../users/entity/users-sessions.entity';
@@ -15,6 +14,8 @@ import { GoogleStrategy } from './strategy/google.strategy';
 import { UserRoles } from '../role/entity/user-roles.entity';
 import { Roles } from '../role/entity/roles.entity';
 import { UserProfiles } from '../profile/entity/user-profiles.entity';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { RolesGuard } from './guards/roles.guard';
 
 @Module({
   imports: [
@@ -29,9 +30,10 @@ import { UserProfiles } from '../profile/entity/user-profiles.entity';
       }),
       inject: [ConfigService],
     }),
-    UsersModule,
+    forwardRef(() => UsersModule), // Use forwardRef to handle circular dependency
   ],
-  controllers: [AuthController, UsersController],
-  providers: [AuthService, JwtStrategy, GoogleStrategy],
+  controllers: [AuthController],
+  providers: [JwtAuthGuard, RolesGuard, AuthService, JwtStrategy, GoogleStrategy],
+  exports: [JwtModule, JwtAuthGuard, RolesGuard, TypeOrmModule], // Export JwtModule and TypeOrmModule
 })
 export class AuthModule {}

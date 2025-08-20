@@ -6,8 +6,8 @@ export class UserProfiles {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @OneToOne(() => Users, user => user.profile, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'user_id' }) // foreign key ke tabel users
+  @OneToOne(() => Users, (user) => user.profile, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'user_id' })
   userId: Users;
 
   @Column({ name: 'full_name', type: 'varchar', length: 255, nullable: true })

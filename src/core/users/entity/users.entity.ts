@@ -1,20 +1,9 @@
-// src/modules/user/entity/user.entity.ts
-import { UserProfiles } from 'src/core/profile/entity/user-profiles.entity';
 import { Roles } from 'src/core/role/entity/roles.entity';
+import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, ManyToMany, JoinTable, OneToMany, OneToOne } from 'typeorm';
+import { UserSessions } from './users-sessions.entity';
+import { Orders } from 'src/modules/user/order/entity/order.entity';
 import { UserRoles } from 'src/core/role/entity/user-roles.entity';
-import {
-  Entity,
-  PrimaryColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn,
-  ManyToMany,
-  JoinTable,
-  ManyToOne,
-  JoinColumn,
-  OneToMany,
-  OneToOne,
-} from 'typeorm';
+import { UserProfiles } from 'src/core/profile/entity/user-profiles.entity';
 
 @Entity('users')
 export class Users {
@@ -30,7 +19,7 @@ export class Users {
   @ManyToOne(() => Roles, { nullable: true, eager: true })
   @JoinColumn({ name: 'active_role_id' })
   activeRole: Roles;
-  
+
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
 
@@ -67,6 +56,12 @@ export class Users {
   @OneToMany(() => UserRoles, (userRole) => userRole.user)
   userRoles: UserRoles[];
 
-  @OneToOne(() => UserProfiles, profile => profile.userId, { cascade: true })
+  @OneToOne(() => UserProfiles, (profile) => profile.userId, { cascade: true })
   profile: UserProfiles;
+
+  @OneToMany(() => UserSessions, (session) => session.user)
+  sessions: UserSessions[];
+
+  @OneToMany(() => Orders, (order) => order.client)
+  orders: Orders[];
 }

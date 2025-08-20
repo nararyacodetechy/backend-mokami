@@ -1,15 +1,14 @@
-// src/modules/user/users.service.ts
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { Users } from './entity/users.entity';
-import { UserProfiles } from 'src/core/profile/entity/user-profiles.entity';
+import { UserProfiles } from '../profile/entity/user-profiles.entity';
+import { Roles } from '../role/entity/roles.entity';
+import { UserRoles } from '../role/entity/user-roles.entity';
 import { CreateUserDto } from './dto/create-user.dto';
-import { Roles } from 'src/core/role/entity/roles.entity';
-import { UserRoles } from 'src/core/role/entity/user-roles.entity';
-import { v4 as uuidv4 } from 'uuid';
+import { RoleEnum } from '../role/enum/role.enum';
 import * as bcrypt from 'bcrypt';
-import { RoleEnum } from 'src/core/role/enum/role.enum';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class UsersService {
@@ -31,42 +30,48 @@ export class UsersService {
     });
   }
 
-  async create(data: Partial<Users>) {
-    return this.userRepository.create(data);
+  async findById(id: string) {
+    return this.userRepository.findOne({
+      where: { id },
+      relations: ['profile', 'roles', 'activeRole', 'orders'],
+    });
   }
 
-  async createUserWithRoleNames(dto: CreateUserDto) {
+  async createUser(dto: CreateUserDto) {
     const existing = await this.userRepository.findOne({ where: { email: dto.email } });
     if (existing) throw new BadRequestException('Email already exists');
 
-    const hashedPassword = await bcrypt.hash(dto.password, 10);
+    const hashedPassword = dto.password ? await bcrypt.hash(dto.password, 10) : null;
 
     const user = this.userRepository.create({
       id: uuidv4(),
       email: dto.email,
       hashedPassword,
-      isEmailVerified: false, // Set to false initially, as email verification is required
+      isEmailVerified: false,
+      isActive: true,
     });
 
     const savedUser = await this.userRepository.save(user);
 
-    // Create user profile
-    const profile = this.userProfilesRepository.create({
-      id: uuidv4(),
-      userId: savedUser,
-      fullName: dto.profile.fullName,
-      username: dto.profile.username,
-      nik: dto.profile.nik,
-      address: dto.profile.address,
-      phone: dto.profile.phone,
-      company: dto.profile.company,
-      imageProfile: dto.profile.imageProfile,
-    });
-    await this.userProfilesRepository.save(profile);
+    // Create user profile if provided
+    if (dto.profile) {
+      const profile = this.userProfilesRepository.create({
+        id: uuidv4(),
+        userId: savedUser, // Set the relation to the Users entity
+        fullName: dto.profile.fullName,
+        username: dto.profile.username,
+        nik: dto.profile.nik,
+        address: dto.profile.address,
+        phone: dto.profile.phone,
+        company: dto.profile.company,
+        imageProfile: dto.profile.imageProfile,
+      });
+      await this.userProfilesRepository.save(profile);
+    }
 
     // Assign roles
     const roles = await this.roleRepository.find({
-      where: { role_name: In(dto.roles ?? [RoleEnum.USER]) }, // Default to USER if no roles provided
+      where: { role_name: In(dto.roles ?? [RoleEnum.USER]) },
     });
     if (!roles.length) throw new NotFoundException('No roles found');
 
@@ -79,29 +84,32 @@ export class UsersService {
     }
 
     // Set default active role (first role or USER)
-    savedUser.activeRole = roles.find(r => r.role_name === RoleEnum.USER) || roles[0];
+    const defaultRole = roles.find((r) => r.role_name === RoleEnum.USER) || roles[0];
+    savedUser.activeRole = defaultRole;
     await this.userRepository.save(savedUser);
 
     return {
       status: 'success',
       message: 'User created successfully',
-      user: {
+      data: {
         id: savedUser.id,
         email: savedUser.email,
         isEmailVerified: savedUser.isEmailVerified,
-        roles: roles.map(r => r.role_name as RoleEnum),
-        activeRole: savedUser.activeRole.role_name as RoleEnum,
-        profile: {
-          id: profile.id,
-          userId: savedUser.id,
-          fullName: profile.fullName,
-          username: profile.username,
-          nik: profile.nik,
-          address: profile.address,
-          phone: profile.phone,
-          company: profile.company,
-          imageProfile: profile.imageProfile,
-        },
+        roles: roles.map((r) => r.role_name as RoleEnum),
+        activeRole: savedUser.activeRole?.role_name as RoleEnum,
+        profile: savedUser.profile
+          ? {
+              id: savedUser.profile.id,
+              userId: savedUser.id,
+              fullName: savedUser.profile.fullName,
+              username: savedUser.profile.username,
+              nik: savedUser.profile.nik,
+              address: savedUser.profile.address,
+              phone: savedUser.profile.phone,
+              company: savedUser.profile.company,
+              imageProfile: savedUser.profile.imageProfile,
+            }
+          : null,
       },
     };
   }
@@ -116,34 +124,34 @@ export class UsersService {
     const role = await this.roleRepository.findOne({ where: { role_name: newRole } });
     if (!role) throw new NotFoundException('Role not found');
 
-    // Check if user has the requested role
-    const userHasRole = user.roles.some(r => r.role_name === newRole);
+    const userHasRole = user.roles.some((r) => r.role_name === newRole);
     if (!userHasRole) throw new BadRequestException('User does not have this role');
 
-    // Update active role
     user.activeRole = role;
     await this.userRepository.save(user);
 
     return {
       status: 'success',
       message: 'Active role updated successfully',
-      user: {
+      data: {
         id: user.id,
         email: user.email,
         isEmailVerified: user.isEmailVerified,
-        roles: user.roles.map(r => r.role_name as RoleEnum),
+        roles: user.roles.map((r) => r.role_name as RoleEnum),
         activeRole: role.role_name as RoleEnum,
-        profile: {
-          id: user.profile.id,
-          userId: user.id,
-          fullName: user.profile.fullName,
-          username: user.profile.username,
-          nik: user.profile.nik,
-          address: user.profile.address,
-          phone: user.profile.phone,
-          company: user.profile.company,
-          imageProfile: user.profile.imageProfile,
-        },
+        profile: user.profile
+          ? {
+              id: user.profile.id,
+              userId: user.id,
+              fullName: user.profile.fullName,
+              username: user.profile.username,
+              nik: user.profile.nik,
+              address: user.profile.address,
+              phone: user.profile.phone,
+              company: user.profile.company,
+              imageProfile: user.profile.imageProfile,
+            }
+          : null,
       },
     };
   }

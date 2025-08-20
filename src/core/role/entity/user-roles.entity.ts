@@ -1,3 +1,4 @@
+// src\core\role\entity\user-roles.entity.ts
 import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, CreateDateColumn } from "typeorm";
 import { Roles } from "./roles.entity";
 import { Users } from "src/core/users/entity/users.entity";

@@ -5,7 +5,6 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './core/auth/auth.module';
 import { UsersModule } from './core/users/users.module';
-import { MailController } from './core/mail/mail.controller';
 import { MailModule } from './core/mail/mail.module';
 import { CustomerModule } from './modules/customer/customer.module';
 import { DesignerModule } from './modules/designer/designer.module';
@@ -46,7 +45,7 @@ import { AdminModule } from './modules/admin/admin.module';
     ProfileModule,
     AdminModule,
   ],
-  controllers: [AppController, MailController],
+  controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule {}

@@ -1,4 +1,3 @@
-// src/modules/user/entity/user-sessions.entity.ts
 import { Entity, PrimaryColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { Users } from './users.entity';
 
@@ -10,10 +9,14 @@ export class UserSessions {
   @Column({ name: 'user_id' })
   userId: string;
 
-  @Column({ name: 'refresh_token', type: 'varchar', nullable: true })
+  @ManyToOne(() => Users, (user) => user.sessions, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'user_id' })
+  user: Users;
+
+  @Column({ name: 'refresh_token', type: 'varchar', length: 512, nullable: true })
   refreshToken: string | null;
 
-  @Column({ name: 'ip_address', type: 'varchar', nullable: true })
+  @Column({ name: 'ip_address', type: 'varchar', length: 64, nullable: true })
   ipAddress: string | null;
 
   @Column({ name: 'user_agent', type: 'text', nullable: true })
@@ -24,9 +27,4 @@ export class UserSessions {
 
   @Column({ name: 'expired_at', type: 'timestamp' })
   expiredAt: Date;
-
-  // Connections
-  @ManyToOne(() => Users, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'user_id' })
-  user: Users;
 }

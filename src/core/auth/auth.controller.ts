@@ -50,7 +50,9 @@ export class AuthController {
             status: result.status,
             message: result.message,
             data: {
-            user: userData,
+                accessToken,
+                refreshToken,
+                user: userData,
             },
         });
     }
@@ -87,18 +89,6 @@ export class AuthController {
         prompt: 'select_account', // 👈 ini memaksa Google tampilkan pilihan akun
         })(req, res);
     }
-
-    // @Get('google/redirect')
-    // @UseGuards(AuthGuard('google'))
-    // async handleRedirect(@Req() req: Request, @Res() res: Response) {
-    //     const user = req.user as any;
-    //     const result = await this.authService.handleGoogleLogin(user);
-
-    //     const { accessToken, refreshToken } = result.data;
-
-    //     console.log('result data from handleRedirect: ', result.data)
-    //     res.redirect(`${process.env.FRONTEND_URL}/auth/login/success?token=${accessToken}&refreshToken=${refreshToken}`);
-    // }
 
     @Get('google/redirect')
     @UseGuards(AuthGuard('google'))
