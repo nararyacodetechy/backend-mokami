@@ -1,5 +1,5 @@
 // src/core/profile/profile.service.ts
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, HttpException, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Users } from 'src/core/users/entity/users.entity';
@@ -13,12 +13,28 @@ export class ProfileService {
   ) {}
 
   async getProfile(userId: string) {
+    console.log('ProfileService: Fetching profile for userId', userId);
+
+    if (!userId) {
+      console.log('ProfileService: No userId provided');
+      throw new HttpException('User ID is required', HttpStatus.BAD_REQUEST);
+    }
+
     const user = await this.userRepository.findOne({
       where: { id: userId },
       relations: ['roles', 'activeRole', 'profile'],
     });
 
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) {
+      console.log('ProfileService: User not found for ID', userId);
+      throw new NotFoundException('User not found');
+    }
+
+    console.log('ProfileService: Fetched user', {
+      id: user.id,
+      email: user.email,
+      activeRole: user.activeRole?.role_name,
+    });
 
     const defaultProfile = {
       id: null,

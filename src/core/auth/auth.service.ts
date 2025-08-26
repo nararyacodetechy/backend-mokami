@@ -39,7 +39,16 @@ export class AuthService {
       relations: ['roles', 'activeRole', 'profile'],
     });
 
-    if (!user) throw new UnauthorizedException('User not found');
+    if (!user) {
+      console.log('AuthService.getProfileById: User not found', userId);
+      throw new UnauthorizedException('User not found');
+    }
+
+    console.log('AuthService.getProfileById: User found', {
+      id: user.id,
+      email: user.email,
+      activeRole: user.activeRole?.role_name,
+    });
 
     return {
       status: 'success',
@@ -107,7 +116,7 @@ export class AuthService {
         await this.userRoleRepository.save(userRole);
       }
 
-      // Set activeRole to the first role (e.g., 'user')
+      // Set activeRole to the first role
       await this.userRepository.update(savedUser.id, { activeRole: defaultRoles[0] });
 
       await this.sendVerificationEmail(savedUser.email, token);
@@ -136,6 +145,8 @@ export class AuthService {
       activeRole: user.activeRole?.role_name,
     };
 
+    console.log('AuthService.login: Payload', payload);
+
     const refreshToken = randomBytes(64).toString('hex');
     await this.userSessionsRepository.save({
       id: uuidv4(),
@@ -143,7 +154,8 @@ export class AuthService {
       refreshToken,
       ipAddress: user.ipAddress,
       userAgent: user.userAgent,
-      expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30), // 30 days
+      expiredAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30), // 30 days
+      createdAt: new Date(),
     });
 
     return {
@@ -167,10 +179,10 @@ export class AuthService {
 
     let user = await this.userRepository.findOne({
       where: { email },
-      relations: ['roles', 'activeRole'], // Load roles and activeRole
+      relations: ['roles', 'activeRole'],
     });
 
-    console.log('user from handle google login: ', user)
+    console.log('user from handleGoogleLogin:', user);
 
     if (!user) {
       user = this.userRepository.create({
@@ -184,10 +196,11 @@ export class AuthService {
       user = await this.userRepository.save(user);
       console.log('[GOOGLE_AUTH] New user created from Google:', user);
 
-      // Assign default role
+      // Default role for new users
       const defaultRole = await this.roleRepository.findOne({ where: { role_name: 'user' } });
       if (!defaultRole) {
-        throw new InternalServerErrorException('Default role not found');
+        console.log('AuthService.handleGoogleLogin: Role user not found');
+        throw new InternalServerErrorException('Role user not found');
       }
 
       const userRole = this.userRoleRepository.create({
@@ -207,8 +220,18 @@ export class AuthService {
         where: { id: user.id },
         relations: ['roles', 'activeRole'],
       });
+    } 
 
+    if (!user?.activeRole) {
+      console.log('AuthService.handleGoogleLogin: No active role for user', user?.id);
+      throw new InternalServerErrorException('User has no active role');
     }
+
+    console.log('AuthService.handleGoogleLogin: Final user', {
+      id: user.id,
+      email: user.email,
+      activeRole: user.activeRole.role_name,
+    });
 
     return this.login(user);
   }
@@ -255,15 +278,14 @@ export class AuthService {
     return user;
   }
 
-  async refreshToken(refreshToken: string) {
-    const session = await this.userSessionsRepository.findOne({ where: { refreshToken } });
-    
+  async refreshToken(refreshToken: string, userId: string) {
+    const session = await this.userSessionsRepository.findOne({ where: { refreshToken, userId } });
     if (!session) throw new UnauthorizedException('Invalid refresh token');
 
     if (new Date(session.expiredAt) < new Date()) {
       throw new UnauthorizedException('Refresh token expired');
     }
-    
+
     const user = await this.userRepository.findOne({
       where: { id: session.userId },
       relations: ['activeRole', 'roles'],
@@ -272,9 +294,11 @@ export class AuthService {
 
     console.log('user.activeRole in refreshToken AuthService:', user.activeRole);
 
-    // Optionally rotate refresh token
     const newRefreshToken = randomBytes(64).toString('hex');
-    await this.userSessionsRepository.update(session.id, { refreshToken: newRefreshToken });
+    await this.userSessionsRepository.update(session.id, {
+      refreshToken: newRefreshToken,
+      expiredAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30), // 30 days
+    });
 
     const payload = {
       sub: user.id,
@@ -285,7 +309,7 @@ export class AuthService {
     console.log('payload for JWT:', payload);
 
     return {
-      accessToken: this.jwtService.sign(payload, { expiresIn: '15m' }),
+      accessToken: this.jwtService.sign(payload, { expiresIn: '30d' }),
       refreshToken: newRefreshToken,
     };
   }
