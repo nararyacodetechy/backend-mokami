@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { Strategy } from 'passport-jwt';
+import { Strategy, ExtractJwt } from 'passport-jwt';
 
 export interface JwtPayload {
   userId: string;
@@ -11,24 +11,31 @@ export interface JwtPayload {
 }
 
 const cookieExtractor = (req: any): string | null => {
+  console.log('JwtStrategy: Request cookies', req.cookies);
+  console.log('JwtStrategy: Request query', req.query);
+  console.log('JwtStrategy: Request body', req.body);
+
+  // Try Authorization header first
+  let token = ExtractJwt.fromAuthHeaderAsBearerToken()(req);
+  console.log('JwtStrategy: Token from Authorization header', token ? 'found' : 'not found');
+  if (token) {
+    return token;
+  }
+
+  // Fallback to cookies
   if (!req || !req.cookies) {
     console.log('JwtStrategy: No cookies in request');
     return null;
   }
 
-  console.log('JwtStrategy: Request cookies', req.cookies);
-
-  // Try to get userId from query parameters
-  const userId = req.query?.userId;
+  const userId = (req.query && req.query.userId) || (req.body && req.body.userId);
   console.log('JwtStrategy: userId', userId);
-
   if (userId) {
     const token = req.cookies[`access_token_${userId}`];
     console.log('JwtStrategy: Token from userId cookie', userId, token ? 'found' : 'not found');
     return token || null;
   }
 
-  // Fallback to any access_token_* cookie
   const cookieKeys = Object.keys(req.cookies).filter((key) => key.startsWith('access_token_'));
   console.log('JwtStrategy: Cookie keys', cookieKeys);
   if (cookieKeys.length > 0) {
@@ -37,8 +44,9 @@ const cookieExtractor = (req: any): string | null => {
     return token || null;
   }
 
-  console.log('JwtStrategy: No access token found');
-  return null;
+  const genericToken = req.cookies['access_token'];
+  console.log('JwtStrategy: Generic access_token', genericToken ? 'found' : 'not found');
+  return genericToken || null;
 };
 
 @Injectable()
